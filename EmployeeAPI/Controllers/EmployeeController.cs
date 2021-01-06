@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Order_MicroService.DataAccess;
 using System;
 using System.Linq;
+using WebApiJWT.Model;
 
 
 
@@ -11,6 +12,7 @@ using System.Linq;
 
 namespace Order_MicroService.Controllers
 {
+    [AuthorizationToken]
     [Route("api/[controller]")]
     [ApiController]
     [EnableCors("AnotherPolicy")]

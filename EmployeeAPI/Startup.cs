@@ -1,18 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using EmployeeAPI.Context;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using ProductApi;
+using System;
+using System.Collections.Generic;
 
 namespace EmployeeAPI
 {
@@ -53,8 +51,9 @@ namespace EmployeeAPI
 
             //services.AddDbContext<EmployeeDBContext>(options => options.UseSqlServer("DefaultConnection"));
 
+            TokenValidationConfig(services);
 
-            
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,19 +65,59 @@ namespace EmployeeAPI
             }
 
             app.UseHttpsRedirection();
-
+            app.UseAuthentication();
+          
             app.UseRouting();
-
             app.UseCors();
-
             app.UseAuthorization();
-            // app.UseCors(options => options.WithOrigins("https://localhost:44305/").AllowAnyMethod().AllowAnyHeader());
-            // app.UseCors(options => options.WithOrigins("http://localhost:44305"));
 
+                     
+
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
+        }
+        private void TokenValidationConfig(IServiceCollection services)
+        {
+            var appSettingSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingSection);
+
+            var appSettings = appSettingSection.Get<AppSettings>();
+            var key = System.Text.Encoding.ASCII.GetBytes(appSettings.Secret);
+
+            services.AddAuthentication(o =>
+            {
+                o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(o =>
+            {
+                o.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = "http://localhost:50191",
+                    ValidateAudience = true,
+                    ValidAudience = "http://localhost:50191",
+                    LifetimeValidator = LifetimeValidator
+
+
+                };
+
+            });
+        }
+        
+
+        public bool LifetimeValidator(DateTime? notBefore, DateTime? expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+        {
+            if (expires != null)
+            {
+                if (DateTime.UtcNow < expires) return true;
+            }
+            return false;
         }
     }
 }
