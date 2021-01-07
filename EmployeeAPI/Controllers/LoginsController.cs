@@ -43,7 +43,7 @@ namespace WebApP.Controllers
             }
         }
 
-        private string createToken(string username)
+        public string createToken(string username)
         {
             DateTime issuedAt = DateTime.UtcNow;
             DateTime expires = DateTime.UtcNow.AddDays(7);
